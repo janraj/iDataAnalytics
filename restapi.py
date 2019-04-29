@@ -1,6 +1,8 @@
 # restapi.py
 import requests
-import json 
+import json
+from jsonmerge import merge
+import time
  
 
 class ApiHandler():
@@ -19,10 +21,22 @@ class ApiHandler():
         '''This API gets the data, if paginations are there it takes care. Return the data as it is.
         User of this API can convert the data into any format they want.
         '''
-        data = kwargs.get('page', "")
+        print("API", api)
+        data_list = []
         resp = requests.get(api, headers=header)
-        data += resp.text
-        if 'next' in resp.links.keys():
-            return (getDataFromApi(resp.links['next']['url'], header,page=data))
-        return (data)
+        print (vars(resp))
+        time.sleep(200)
+        data = resp.text
+        data_list.append(data)
+        jsonData = resp.json()
+        previousPage=""
+        while(("next_page" in jsonData) and (jsonData["next_page"] is not None) and (jsonData["next_page"] is not previousPage)):
+            previousPage = jsonData["next_page"]
+            newapi = api+"&next_page="+jsonData["next_page"]
+            print("API", newapi)
+            resp = requests.get(newapi, headers=header)
+            data = resp.text
+            data_list.append(data)
+            jsonData = resp.json()
+        return data_list
 
